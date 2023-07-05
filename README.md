@@ -4,23 +4,23 @@ In this workshop you will learn to build a portofilo website with [Remix](https:
 
 This repository contains different branches. Each branch representing a separate step.
 
-- [Step 1]()
+- [Step 1](https://github.com/harshil1712/remix-contentful-workshop/tree/step-1)
     - Setup a Remix project
     - Install and configure TailwindCSS
     - Create Blog and About pages
     - Create a Navigation component
-- [Step 2]()
+- [Step 2](https://github.com/harshil1712/remix-contentful-workshop/tree/step-2)
     - Create a blog content type in Contentful
     - Add entries for the blog
     - Create an About content type in Contentful
     - Add an entry for the About type
-- [Step 3]()
+- [Step 3](https://github.com/harshil1712/remix-contentful-workshop/tree/step-3)
     - Configure a `.env` file
     - Create `contentful.server.js` file
     - Render content from Contentful
-- [Step 4]()
+- [Step 4](https://github.com/harshil1712/remix-contentful-workshop/tree/step-4)
     - Add dynamic routing
-- [Step 5]()
+- [Step 5](https://github.com/harshil1712/remix-contentful-workshop/tree/step-5)
     - Deploy your website!
 
 ## Resources
