@@ -4,56 +4,24 @@ In this workshop you will learn to build a portofilo website with [Remix](https:
 
 This repository contains different branches. Each branch representing a separate step.
 
-## Step 3
+## Step 4
 
-### Create `.env` file
+If you click on any blog, you will see be taken to a 404 page. In this step, you will learn to create dynamic routes in Remix.
 
-To fetch content from Contentful, you need the Space ID, and the Access Token. Follow the steps mentioned below to generate new tokens.
-- In Contentful, click on ***Settings*** and select ***API keys***
-- Click on the ***+ Add API key*** button.
-- Copy the displayed ***Space ID*** and the ***Content Delivery API - access token***.
+### Update `contentful.server.js` file
 
-- Rename `.env.example` to `.env`.
-- Paste the previously copied credentials, respectively.
-
-### Create `contentful.server.js`
-
-Create a new file called `contentful.server.js`. This file will contain the code that fetches content from Contentful.
-
-- Add the following code
+Add and export the following function.
 ```js
-const SPACE = process.env.CONTENTFUL_SPACE_ID
-const TOKEN = process.env.CONTENTFUL_ACCESS_TOKEN
-
-const fetchUrl = `https://graphql.contentful.com/content/v1/spaces/${SPACE}/environments/master`;
-
-async function apiCall(query, variables) {
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${TOKEN}`,
-        },
-        body: JSON.stringify({ query, variables }),
-    }
-    return await fetch(fetchUrl, options)
-}
-```
-The above code creates a resuable function that will be used to make API calls to Contentful.
-
-> NOTE: This project uses the GraphQL API. Alternatively, you can use the REST API, or the JavaScript SDK to fetch content.
-
-- Update the file with the following code. The below code fetches all the blogs from Contentful.
-
-```js
-async function getAllBlogs() {
+async function getSingleBlogBySlug(slug) {
     const query = `
-    {
-        blogCollection {
+    query($slug: String){
+        blogCollection(where: {slug: $slug}) {
           items {
             title
-            slug
             description
+            content {
+                json
+            }
             coverImage {
               url
               description
@@ -62,81 +30,133 @@ async function getAllBlogs() {
         }
       }
     `
-    const response = await apiCall(query);
+    const variables = {
+        slug: slug
+    };
+    const response = await apiCall(query, variables);
     const result = await response.json();
-    return await result.data.blogCollection.items
+    console.log(result)
+    return await result.data.blogCollection.items[0]
 }
 ```
 
-- Lastly, export the `getAllBlogs()` function.
+The above function queries for a blog article based on the slug.
 
-```js
-export { getAllBlogs }
-```
+### Add dynamic routes
 
-### Render content from Contentful
-
-You now get the list of blog articles from Contentful. In this step, you will render them on the Blog page.
-
-- Import the required functions.
+- Create `blog_.$slug.jsx` file.
+- Import the newly created function and use it in the `loader()` function.
 ```jsx
-import { json } from "@remix-run/node";
-import { getAllBlogs } from "../contentful.server";
-...
-```
+import { getSingleBlogBySlug } from "../contentful.server"
+import { json } from "@remix-run/node"
 
-- Add the `loader()` function as follow. This loader function will fetch the blogs from Contentful when a user navigates to the Blog page.
-```jsx
-import ...
-
-export async function loader() {
-    const blogs = await getAllBlogs();
-    return json({blogs})
+export async function loader({ params }) {
+    const blog = await getSingleBlogBySlug(params.slug)
+    return json({ blog })
 }
-
-...
 ```
-- Import the `useLoaderData()` hook and use it in your component.
+The `params` object contains the slug. You pass this slug to the function to fetch the respective content.
+- Import the `useLoaderData()` hook and use it in the component.
 ```jsx
-...
-import { Link, useLoaderData } from "@remix-run/react";
-...
+import { json } from "@remix-run/node"
+import { useLoaderData } from "@remix-run/react"
+import { getSingleBlogBySlug } from "../contentful.server"
+
+export async function loader({ params }) {
+    const blog = await getSingleBlogBySlug(params.slug)
+    return json({ blog })
+}
 
 export default function () {
-    const { blogs } = useLoaderData();
+    const { blog } = useLoaderData()
     return (
         <main className="container mx-auto">
-            <h1 className="text-3xl sm:text-6xl">Blogs</h1>
-            <ul className="mt-8">
-                {
-                    blogs.map(blog => {
-                        return (
-                            <li key={blog.slug} className="mb-8">
-                                <Link to={blog.slug}>
-                                    <div className="max-w-sm w-full lg:max-w-full lg:flex">
-                                        <div className="h-48 lg:h-auto lg:w-48 flex-none bg-cover rounded-t lg:rounded-t-none lg:rounded-l text-center overflow-hidden" style={{ backgroundImage: `url(${blog.coverImage.url})` }} title={blog.coverImage.description}>
-                                        </div>
-                                        <div className="bg-white rounded-b lg:rounded-b-none lg:rounded-r p-4 flex flex-col justify-between leading-normal">
-                                            <div className="mb-8">
-                                                <div className="text-gray-900 font-bold text-xl mb-2">{blog.title}</div>
-                                                <p className="text-gray-700 text-base">{blog.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </li>
-                        )
-                    })
-                }
-            </ul>
+            <h1 className="mt-8 mb-8 text-3xl sm:text-6xl">{blog.title}</h1>
+            <img src={blog.coverImage.url} width='100%' height='50%' className="mb-8" alt={blog.coverImage.description} />
         </main>
     )
 }
 ```
 
-### About Page
+The code will render the blog title and the cover image.
 
-Similar to the Blog page, try creating a query that fetches content for the About content type. Render out this content on the About page.
+### Render Rich Text
+
+- To render Rich Text, install the rich-text-render packages. Run the following command.
+```sh
+npm i @contentful/rich-text-react-renderer
+```
+- Update the imports in your `blog_.$slug.jsx` file.
+```jsx
+...
+import { documentToReactComponents } from '@contentful/rich-text-react-renderer';
+import { BLOCKS, INLINES } from '@contentful/rich-text-types';
+...
+```
+
+- Create the `richTextRenderOptions` object. In this object, you can define the style for the Rich Text content.
+```jsx
+export const richTextRenderOptions = {
+    renderNode: {
+        [INLINES.HYPERLINK]: (node, children) => {
+            const { data } = node;
+            const { uri } = data;
+            return (
+                <a
+                    className="text-primary underline"
+                    target="_blank"
+                    href={uri}
+                >
+                    {children[0]}
+                </a>
+            );
+        },
+        [BLOCKS.PARAGRAPH]: (node, children) => {
+            return (
+                <p className="text-gray-700 text-baseleading-relaxed mb-4 text-justify">{children}</p>
+            );
+        },
+        [BLOCKS.HEADING_1]: (node, children) => {
+            return (
+                <h2 className="text-4xl">{children}</h2>
+            )
+        },
+        [BLOCKS.HEADING_2]: (node, children) => {
+            return (
+                <h2 className="text-3xl">{children}</h2>
+            )
+        }
+    },
+};
+```
+
+- Update the component to render the rich text.
+```jsx
+export default function () {
+    const { blog } = useLoaderData()
+    return (
+        <main className="container mx-auto">
+            <h1 className="mt-8 mb-8 text-3xl sm:text-6xl">{blog.title}</h1>
+            <img src={blog.coverImage.url} width='100%' height='50%' className="mb-8" alt={blog.coverImage.description} />
+            {documentToReactComponents(blog.content.json, richTextRenderOptions)}
+        </main>
+    )
+}
+```
+
+### Add Meta data
+
+- Add the following function to `blog_.$slug.jsx` file.
+```jsx
+export const meta = ({ data }) => {
+    const { blog } = data;
+    return [
+        { title: blog.title },
+        { name: "description", content: blog.description },
+    ];
+};
+```
+
 
 ## Resources
 
