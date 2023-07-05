@@ -20,9 +20,7 @@ This repository contains different branches. Each branch representing a separate
     - Render content from Contentful
 - [Step 4](https://github.com/harshil1712/remix-contentful-workshop/tree/step-4)
     - Add dynamic routing
-- [Step 5](https://github.com/harshil1712/remix-contentful-workshop/tree/step-5)
-    - Deploy your website!
-
+    
 ## Resources
 
 - [Remix Docs](https://remix.run/docs)
